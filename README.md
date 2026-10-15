@@ -6,4 +6,4 @@ Desecure Technology fuar oyunu: GES, RES ve TES sahalarını kameralar, siren ve
 
 Tam sürüm (strateji modu): adresin sonuna `#tam` ekleyin.
 
-desecuretechnology.com · Instagram @desecuretechnology · YouTube @DesecureAlarm
+desecuretechnology.com · Instagram @desecuretechnology · YouTube @DesecureTechnology
