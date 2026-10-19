@@ -1,6 +1,6 @@
 # Desecure AİM Game
 
-Desecure Technology fuar oyunu: Alarm İzleme Merkezi (AİM) operatörü olarak enerji santralini (GES / RES / TES) kur, savun, her alarmda doğru kararı ver.
+Desecure Technology fuar oyunu: Alarm İzleme Merkezi (AİM) operatörü olarak enerji santralini (GES / RES / TES / JES / HES / BESS) kur, savun, her alarmda doğru kararı ver.
 
 - **Canlı:** https://bugraozgenc-dotcom.github.io/desecureaimgame/
 - **Tek dosya:** `oyna.html` (çift tıkla açılır) · GitHub Pages için `github-yayin/index.html`
@@ -99,5 +99,33 @@ Gereksinim: Node.js 18+.
 - **Günün Baş Operatörü:** bekleme ekranında ve 1. olan oyuncunun sonuç ekranında büyük şerit (`PRIZE_TEXT` sabitiyle ödül yazısı).
 - **Düello (2 oyuncu):** kayıt ekranında sekme; aynı saha, aynı olay sırası (aynı tohum), sırayla oynanır; sonunda karşılaştırma + rövanş.
 - **Rozetler:** Sıfır yanlış alarm, Jandarma dostu, Gece kartalı, Makara bekçisi, Seri avcı, Fırtına dindi, Karanlıkta nöbet, Keskin göz, Taktikçi, Sis delici / Yağmur nöbetçisi — sonuç ekranında ve puan kartında.
-- **Kampanya:** görev seçiminde "GES → RES → TES"; bölümler arasında temsili Desecure vaka dosyası, sonunda toplam puan ve kampanya unvanı.
+- **Meydan Okuma (eski adıyla kampanya):** görev seçiminde "GES → RES → TES"; bölümler arasında temsili Desecure vaka dosyası, sonunda toplam puan ve meydan okuma unvanı.
 - Hırsız tipleri: koşucu, sinsi, ekip, sahte personel, sürünen, post giymiş ve **ağaç kılıklı** (1–2 sn yürür, 2–4 sn ağaç gibi donar; dururken neredeyse görünmez, bacakları alttan belli olur; kaçarken kılığı atar — `variant: tree`, `TreeDisguise`).
+
+## Yeni sahalar: JES ve HES
+
+- **JES-4 Jeotermal Santrali** (`mapId: 'jes'`, görev 104): dört üretim kuyusu (K-1…K-4, buhar tüten vana ağaçları), reenjeksiyon kuyusu, buhar separatörü, hava soğutmalı kondenser, türbin-jeneratör binası, şalt sahası; kuyulardan separatöre yükseltilmiş buhar hatları (`GeoPipes`). Hedefler: şalt sahası + en az 2 kuyu başı.
+- **HES-5 Hidroelektrik Santrali** (`mapId: 'hes'`, görev 105): kuzeyde baraj gövdesi ve rezervuar (su; hırsız o yönden gelmez, kuzey çiti yok), üç cebri boru, santral binası, şalt sahası, trafo yağı tankı, kuyruk suyu kanalı + servis köprüsü (`HydroWater`). Ana kapı güneyde x=-16. Hedefler: şalt sahası + cebri borular.
+- Meydan okuma artık beş santral (GES → RES → TES → JES → HES), iki yeni vaka dosyasıyla; meydan okuma unvanı toplam yıldıza göre ölçeklenir.
+- Yeni bina türleri: `wellhead`, `fancooler`, `separator`, `dam`, `penstock` (`IndustrialModels.tsx`).
+- **BESS-6 Batarya Depolama Tesisi** (`mapId: 'bess'`, görev 106): dört batarya bloğu (A–D, her biri 3 konteyner + PCS inverter skidi, HVAC üniteli beyaz kabinler, yeşil durum LED'i), şalt sahası, yedek modül deposu, yangın söndürme konteyneri, kontrol binası. Hedefler: şalt sahası + en az 2 batarya bloğu. Meydan okuma altı tesise çıktı. Yeni bina türleri: `battery`, `pcs`.
+
+## Zorluğa göre harita boyutu
+
+- **Kolay:** temel saha. Kurulum süresi her zorlukta 120 sn. **Normal:** çit her yönde 4 hücre dışa alınır (daha geniş açık alan, bütçe ×1,15). **Zor:** çit 8 hücre dışa alınır, bütçe ×1,35 (RES'te ×1,6) — büyüyen bantta rastgele ağaç/çalı ve çit içinde kör nokta adayı çalılar (`Builder.grow`, `growFill`, `LevelDef.mapGrow`).
+- **RES Zor:** 6 türbin sahaya dağınık (T1–T6, `MapOpts.turbines`), her türbine ayrı servis yolu, kuzey kapısı x=-20.
+- Kamera uzaklığı ve sis mesafeleri harita boyutuyla ölçeklenir (`mapScale`).
+
+## Grafik ve seçim ekranı (v3)
+
+- Render: ACES filmic ton eşleme, yumuşak gölgeler (PCFSoft), gradyan gökyüzü kubbesi, güneş/ay diski, süzülen alçak poligon bulutlar, gece yıldızları, gündüz kuş sürüsü (`scene/Sky.tsx`); ana yollarda kesikli orta şerit ve kenar bandı.
+- Görev seçimi: sol sütunda zaman/zorluk ve canlı "Görev özeti" (hırsız sayısı, saha boyutu, kurulum süresi, puan çarpanı), sağda 3×2 kart ızgarası — kartta kod rozeti, ÖNERİLEN/YENİ etiketleri, bütçe/süre ve günün en iyi puanı, hover'da büyüyen görsel ve "Seç" düğmesi.
+- Açılış metni: "Göreve hazır mısın, operatör?" / "GÖREVE BAŞLA".
+- Detay katmanı (`scene/Props.tsx`): çim tutamları, çiçek öbekleri, çakıl, bina çevresinde varil/kasa/palet/makara, kontrol binasında koni ve tabela, çatılarda klima üniteleri ve havalandırma bacaları, ana yol boyunca aydınlatma direkleri (gece yanar), çit dışında kütükler. Zeminde 2×2 dama deseni ve bina dibinde aşınmış toprak halkası (`buildingWear`). Bulutlar kaldırıldı. Canvas'ta hafif doygunluk filtresi.
+
+- Logo: koyu zemin logosunda "TECHNOLOGY" yazısı beyaz (amblem ve ayraç bordo kaldı); puan kartı aynı SVG'yi kullandığı için orada da beyaz.
+- Teknoloji: Phaser.js kullanılmadı — React 18 + TypeScript + three.js (@react-three/fiber, drei) + zustand + Vite.
+
+## Gözcü Drone
+
+Fuar mağazasında Güvenlik Kulesi yerine **Gözcü Drone** (DRN): 3.800 kredi, 1 hücrelik dok, 10 m irtifada 360° görüş, 22 m menzil, engellerin/tepelerin üzerinden bakar, kendi bataryasıyla elektrik kesintisinde çalışır, görev başına en fazla 2 adet. Dok çevresinde daire çizerek süzülür, pervaneleri döner, konum ışıkları yanar (`SecurityEquipment.tsx` → `case 'drone'`). Demo kurulumunda köşelere drone konur. Tam oyunda kule hâlâ mevcut.
