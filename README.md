@@ -129,3 +129,83 @@ Gereksinim: Node.js 18+.
 ## Gözcü Drone
 
 Fuar mağazasında Güvenlik Kulesi yerine **Gözcü Drone** (DRN): 3.800 kredi, 1 hücrelik dok, 10 m irtifada 360° görüş, 22 m menzil, engellerin/tepelerin üzerinden bakar, kendi bataryasıyla elektrik kesintisinde çalışır, görev başına en fazla 2 adet. Dok çevresinde daire çizerek süzülür, pervaneleri döner, konum ışıkları yanar (`SecurityEquipment.tsx` → `case 'drone'`). Demo kurulumunda köşelere drone konur. Tam oyunda kule hâlâ mevcut.
+
+## Sürpriz olaylar ve puanlama (v4)
+
+- **Gündüz:** elektrik kesintisi yok; onun yerine görevin ortasında 14 sn **toz fırtınası** — optik kameraların menzili yarıya iner, termal/drone/Desecure ürünleri %75'te kalır (`env.dust`, `startDustStorm`); sahne kum rengi sise bürünür, yatay toz parçacıkları uçuşur, HUD'da sayaçlı bant. Rozet: "Toz fırtınası gazisi".
+- **Gece:** 10 sn elektrik kesintisi devam eder. (Kolay'da iki olay da yok.)
+- **Puanlama:** sahaya girip hiç tespit edilemeyen her hırsız **−100 puan** ("Tespit edilemeyen hırsız" satırı). Sonuç ekranında açılır "Puan dökümü" listesi tüm satırları gösterir.
+- **Puan kartı PNG:** sonuç ekranında karta tıklamak ya da "Puan kartını PNG olarak indir" düğmesi 1080×1350 PNG'yi bilgisayara indirir (`desecure-aim-game-ad-soyad.png`).
+- Performans: canvas üzerindeki CSS doygunluk filtresi kaldırıldı (bazı GPU'larda kare hızını düşürüyordu), gölge PCF'e döndü, yağmur yokken yağmur parçacıkları hesaplanmıyor. **Uyarlanabilir kalite** (`scene/gfx.ts`): 4 sn ortalaması 28 fps altına düşerse otomatik olarak çözünürlük çarpanı 1'e, gölge haritası 1024'e iner ve çim/çiçek/çakıl katmanı gizlenir.
+
+## Fuar modu (şifreli)
+
+Giriş ekranında iki mod kartı var: **Normal mod** (varsayılan, "GÖREVE BAŞLA") ve **Fuar modu** ("ŞİFRE İLE AÇ" → şifre kartı, `src/game/config/expo.ts`). Fuar modu açılınca ekran altın temaya geçer (üst şerit, "FUAR MODU AÇIK" rozeti, fuar kartı seçili), Normal mod kartındaki "Normal moda geç" ile kapanır; ayar `localStorage`'da kalır (`desecure-fair-expo`). Aynı oyun ve görevler, stant kurallarıyla:
+
+- Mağazada **Bullet Kamera (Sabit)** (tek başlı, `bulletCam`, 200 kredi) ve sabit kamera **Çift Bullet Kamera (Sabit)** (400 kredi) olur: tek direkte iki başlık (`Device.yaw2`). Köşeye konunca başlıklar iki çite, düz çitte iki yöne bakar (`fenceYaws`); "Döndür" ikisini birlikte çevirir. Görüş hesabı (`cameraSees`) iki yönden birini yeterli sayar; koniler ve hayalet önizleme iki yelpaze çizer.
+- **Termal kamera** diğer kameraların 3 katı menzile sahip (23 → 69 m) ve gündüz de mağazada.
+- **Bullet kamera yalnızca çit hattına ve köşelere** konabilir (içeride geçersiz: "Bullet kamera yalnızca çit sınırına kurulur"); PTZ, termal ve drone hem çit üstüne hem içeriye konabilir (`validatePlacement` → `nav === 2`). Yerleştirdikten sonra "Döndür" ile yön değiştirilebilir.
+- Kamera konunca (ya da taşınınca) **en yakın çite / dışarıya** kendiliğinden döner; köşede çapraz bakar (`fenceYaw`). Hayalet önizleme de bu yönü gösterir.
+- **Kurulum süresi yok:** sayaç çipi "∞", otomatik savunmaya geçiş kapalı; operatör "Savunmaya geç" der.
+- **Hırsız ve hayvanlar kapsama dışındaki çitten girer:** simülasyon başında her çit/kapı hücresi + hemen dışındaki iki yaklaşma noktası için kamera görüşü hesaplanır (`computeFenceCoverage` → `nav.fenceCovered`). Kapsanan çit hücresinin geçiş maliyeti 12 kat (`pathfinding.cellCost`), doğum noktası ağırlığı kapsanan bölümde 0,08×, açık bölümde 3× (`spawnBias`). Acil yerleştirilen kamera kapsamayı günceller.
+- **Çit çevresi seyrek:** fuar haritasında çitin iki yanındaki 9 m'lik banttaki ağaçların ~%18'i kalır, 3 m içinde hiç ağaç kalmaz; görüş/geçiş engelleri buna göre yeniden işlenir (`thinFenceTrees`, `getMap(..., { expo })`), harita kenarı süs ağaçları da seyrekleşir. Sınır her yönden görünür.
+- Üst çubukta sarı **FUAR** rozeti; kurulum giriş kartında fuar notu.
+
+### Fuar modu: sınır güvenliği kurgusu
+
+Amaç oyuncuya sınır güvenliğini yaşatmak; iç alan için ipucu verilmez.
+
+- **Kredi:** her harita / zorluk / gece-gündüz / hava için çitin tamamını kapatmanın en ucuz maliyeti açgözlü küme örtüsüyle hesaplanır (`systems/expoBudget.ts`, `expoPerimeterPlan`). Bütçe = bu maliyet ×1,25 + iç alan için iki kamera payı (gündüz 2 PTZ, gece 2 termal). Örn. GES Normal gündüz: sınır 2.600 → bütçe 6.900. Oyuncu pahalı ekipmana önce harcarsa sınırı kapatamaz.
+- **Kurulum:** görev hedefleri, makara etiketleri (x/y), risk katmanı, makara notu ve taktik notu gizli; "Stratejini sen kur."
+- **Hırsızlar:** çitte kamera görmeyen bölüm varsa hırsız ve hayvanlar yalnızca o boşluğa yakın noktadan doğar (`spawnBias`), kapsanan çit 60 kat pahalı (`pathfinding`). Çiti 1,6 sn'de keser, içeride 1,6× hızla en yakın makaraya koşar (`pickTarget`). Çit %100 kapsamdaysa çite yaklaşırken görülür.
+- **Otomatik AİM:** karar kartı yok. Kameraya giren olayı AİM 0,65 sn içinde kendisi sınıflandırır (`fairStore.autoAim`): hırsız → siren/uzaktan uyarı + devriye + jandarma, hayvan → sesli uyarı, personel → doğrulama. Elle karakter işaretleme kapalı, taktik çubuğu yok. Savunma başladıktan sonra kamera eklenemez (acil yerleştirme hakkı 0, mağaza gizli).
+- **Çalınma uyarısı:** hırsız fark edilmeden makara alırsa ekranın ortasında "BAKIR KABLO ÇALINDI! Makaraları koruyan bir kamera olmadığı için hırsız fark edilmeden kabloları aldı." uyarısı, 3,4 sn ağır çekim ve kamera o noktaya kayar (`engine.theftLog`).
+- **Puan:** çit kapsaması ×5 (en çok 500) + korunan makara ×150 + AİM'in durdurduğu hırsız ×120 − fark edilmeden giren hırsız ×100. %100 sınırda "Sınır bekçisi" rozeti. Sonuç özetinde "Sınır kapsaman %X — N boşluktan M hırsız girdi, K makara çalındı"; puan kartında "Çit kapsaması". Desecure demosu fuar modunda çit hattını %100 kapatan kurulumla oynar.
+
+### Fuar modu: akıllı hırsız ve kamera sabotajı
+
+- Her çit kamerasının hemen dış tarafı (1,4 m) "sabotaj noktası"dır (`coverage.sabotageSpot`). Bu noktayı başka hiçbir kamera görmüyorsa kamera **savunmasız** sayılır (`unwatchedFenceCams`, `engine.vulnerable`). Bullet kamera çit boyunca baktığı için kendi dibini göremez; onu komşu kamera izlemelidir.
+- Çitte boşluk yokken savunmasız kamera varsa hırsız **Sabotajcı hırsız** olarak doğar (`spawnSaboteur`): kameraya en yakın noktadan kör noktaya yaklaşır, 2,6 sn çömelip kamerayı devre dışı bırakır (`engine.sabotage`, `DeviceRuntime.sabotaged`), çit kapsaması yeniden hesaplanır ve açılan boşluktan en yakın makaraya koşar. Sonraki hırsızlar da bu boşluğu kullanır.
+- Sabotajcı yaklaşırken bir kameraya görünürse AİM müdahale eder ve sabotajcı planından vazgeçip kaçar.
+- Sabotaj anında turuncu uyarı: "KAMERA SABOTE EDİLDİ! BLT-02 kamerasını başka bir kamera görmüyordu. Hırsız kör noktadan yaklaşıp kamerayı devre dışı bıraktı." (ağır çekim + kamera odaklanır). Kameranın konisi kırmızıya döner.
+- Puan: sabote edilen her kamera −100; "Sınır bekçisi" rozeti için sabotaj olmamalı. Sonuç özetinde "N kamera sabote edildi: kameralar birbirini görmüyordu".
+- Kredi artık **karşılıklı görüşlü** tam sınır planına göre: çit kapsandıktan sonra her kameranın sabotaj noktasını başka bir kamera görene dek kamera eklenir (`expoPerimeterPlan`, `coverCost` / `cost`). Bütçe = bu maliyet ×1,2 + iç alan payı. Örn. GES Normal gündüz: kapsama 2.600, güvenli plan 4.200. Fuar modunda teknik arıza (kamera kopması) yok; kamerayı yalnızca hırsız düşürür. Demo sabotaj içermez.
+
+### Fuar modu: kör noktadan sızan hırsız, pahalı termal
+
+- Simülasyon başında (ve kamera eklenince / sabote edilince) her kameranın gördüğü hücreler çıkarılır (`coverage.cameraSeenCells` → `nav.camSeen`). Hırsız rotasında kameranın gördüğü her hücre +12 maliyet: akıllı hırsız dışarıda da içeride de kör noktalardan dolanarak ilerler (`pathfinding.cellCost`). Hayvanlar bu hesabı yapmaz.
+- Hedef seçimi: önce kameranın görmediği makara, hepsi izleniyorsa en yakını (`pickTarget`). İç alandaki makaraları kamerayla izlemek böylece doğrudan işe yarar.
+- Fuar modunda **termal kamera 5.000 kredi** (`EXPO_THERMAL_COST`; normal modda 2.200). İç alan kredi payı artık 2 PTZ (+ gece 2 aydınlatma direği); termal paya girmez. Örn. GES Normal gündüz bütçesi 8.700.
+
+### Demo: Ana sayfa butonu
+
+Desecure demosunun üst çubuğunda (ses düğmesinin yanında) **Ana sayfa** butonu var; demo bittiğinde çıkan kartta da "Puanıma dön"ün yanında yer alır. Tıklanınca demo durur ve giriş (mod seçimi) ekranına dönülür (`DemoHUD.goHome` → `toAttract`).
+
+### Kaçış rotası ve metinler
+
+- Hırsız geldiği yoldan kaçar (her modda): doğduğu nokta (`originX/Z`) ve çitten ilk girdiği hücre (`entryCell`) kaydedilir. Makarayı alınca (ya da siren/devriye ile kaçarken) önce kendi kestiği deliğe, oradan geldiği noktaya yürür; kendi deliğinden çıkarken çiti yeniden kesmez (`startEscape`, `ThreatAI` "ownHole").
+- "Gerçek sahada AİM bunu durdurur / 7/24 tutar" türü cümleler kaldırıldı (kamyonet uyarısı, görev özeti, pes / tesis boşaldı notları, demo sonu, meydan okuma sonu, fuar sınır özeti).
+
+### Fuar şifresi (GitHub'a uygun)
+
+Şifre kaynakta ve yayın dosyasında açık yazılmaz; yalnızca özeti tutulur (`EXPO_PASSWORD_HASH`, `checkExpoPassword`, `src/game/config/expo.ts`). Büyük/küçük harf fark etmez. Şifreyi değiştirmek için oyunu açıp tarayıcı konsolunda `__expoHash('yeni-sifre')` çalıştırın, çıkan değeri `EXPO_PASSWORD_HASH`'e, yeni uzunluğu `EXPO_PASSWORD_LEN`'e yazıp yeniden derleyin. Not: bu bir gizleme; kodu inceleyen kararlı biri yine de deneme yoluyla bulabilir, fuar modu için yeterlidir.
+
+## GitHub'a yükleme
+
+`github-yayin/` klasöründeki iki dosya deponun köküne yüklenir:
+
+- `index.html` → oyunun kendisi (tek dosya, GitHub Pages bunu açar)
+- `README.md` → bu açıklama
+
+Depo: github.com/bugraozgenc-dotcom/desecureaimgame → **Add file → Upload files** → iki dosyayı sürükle → **Commit changes**. Pages ayarı (Settings → Pages → Branch: main / root) bir kez yapıldıysa 1–2 dk içinde canlı adres güncellenir.
+
+## Giriş ekranı: AİM izleme merkezi (Konsept B)
+
+Bekleme ekranı bir alarm izleme merkezidir (`FairApp.tsx` → `Attract`, stiller `fair.css` → `.cr-*`). Sahne 1440×900 sabit tasarlanır ve ekrana orantılı ölçeklenir (`useStageScale`), her çözünürlükte aynı görünür.
+
+- Üstte logo, "CANLI · AİM ALARM İZLEME MERKEZİ", canlı saat ve ses düğmesi; altında kırmızı LED tabela "GÖREVE HAZIR MISIN, OPERATÖR?".
+- Video duvarında iki mod ekranı: **Normal mod** (kırmızı, nişangâh köşeleri, "GÖREVE BAŞLA") ve **Fuar modu** (gece görüntüsü, altın, "ŞİFRE İLE AÇ"). Ekranlarda tarama çizgisi, kayan ışık bandı, tarih/saat damgası. Görseller `assets/cr-normal.jpg`, `assets/cr-expo.jpg` (oyunun kendi sahneleri).
+- Masa: klavye, PTZ joystick, telsiz ekranı ve önde ekranlara bakan özel güvenlik görevlisi (`CrGuard`, CSS ile çizilir).
+- Fuar şifresi: duvar kararır, LED "ERİŞİM KİLİDİ · FUAR MODU" olur, 7 kutulu erişim kodu paneli büyüyerek açılır. Yanlış kodda kutular kırmızı titrer ve "ERİŞİM REDDEDİLDİ" yazar; Esc veya dışarı dokunmak kapatır.
+- Fuar modu açıkken oda altın tonuna geçer: "FUAR MODU AÇIK" rozeti, "✓ ERİŞİM ONAYLANDI", altın "GÖREVE BAŞLA"; Normal ekran "BEKLEMEDE" ve "Normal moda geç".
+- Sesler (`sfx`): ekran üzerine gelince `uiHover`, `modeNormal`, `modeExpo`, tuş `key`, `unlock`, `denied`, `cancel`, `expoStart`. Ses düğmesi kapalıysa çalmaz.
