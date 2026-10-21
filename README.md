@@ -147,7 +147,7 @@ Giriş ekranında iki mod kartı var: **Normal mod** (varsayılan, "GÖREVE BAŞ
 - **Bullet kamera yalnızca çit hattına ve köşelere** konabilir (içeride geçersiz: "Bullet kamera yalnızca çit sınırına kurulur"); PTZ, termal ve drone hem çit üstüne hem içeriye konabilir (`validatePlacement` → `nav === 2`). Yerleştirdikten sonra "Döndür" ile yön değiştirilebilir.
 - Kamera konunca (ya da taşınınca) **en yakın çite / dışarıya** kendiliğinden döner; köşede çapraz bakar (`fenceYaw`). Hayalet önizleme de bu yönü gösterir.
 - **Kurulum süresi yok:** sayaç çipi "∞", otomatik savunmaya geçiş kapalı; operatör "Savunmaya geç" der.
-- **Hırsız ve hayvanlar kapsama dışındaki çitten girer:** simülasyon başında her çit/kapı hücresi + hemen dışındaki iki yaklaşma noktası için kamera görüşü hesaplanır (`computeFenceCoverage` → `nav.fenceCovered`). Kapsanan çit hücresinin geçiş maliyeti 12 kat (`pathfinding.cellCost`), doğum noktası ağırlığı kapsanan bölümde 0,08×, açık bölümde 3× (`spawnBias`). Acil yerleştirilen kamera kapsamayı günceller.
+- **Hırsız ve hayvanlar kapsama dışındaki çitten girer:** simülasyon başında her çit/kapı hücresinde hırsızın çömelip kestiği nokta için kamera görüşü hesaplanır (`computeFenceCoverage` → `nav.fenceCovered`). Kapsanan çit hücresinin geçiş maliyeti 12 kat (`pathfinding.cellCost`), doğum noktası ağırlığı kapsanan bölümde 0,08×, açık bölümde 3× (`spawnBias`). Acil yerleştirilen kamera kapsamayı günceller.
 - **Çit çevresi seyrek:** fuar haritasında çitin iki yanındaki 9 m'lik banttaki ağaçların ~%18'i kalır, 3 m içinde hiç ağaç kalmaz; görüş/geçiş engelleri buna göre yeniden işlenir (`thinFenceTrees`, `getMap(..., { expo })`), harita kenarı süs ağaçları da seyrekleşir. Sınır her yönden görünür.
 - Üst çubukta sarı **FUAR** rozeti; kurulum giriş kartında fuar notu.
 
@@ -157,14 +157,14 @@ Amaç oyuncuya sınır güvenliğini yaşatmak; iç alan için ipucu verilmez.
 
 - **Kredi:** her harita / zorluk / gece-gündüz / hava için çitin tamamını kapatmanın en ucuz maliyeti açgözlü küme örtüsüyle hesaplanır (`systems/expoBudget.ts`, `expoPerimeterPlan`). Bütçe = bu maliyet ×1,25 + iç alan için iki kamera payı (gündüz 2 PTZ, gece 2 termal). Örn. GES Normal gündüz: sınır 2.600 → bütçe 6.900. Oyuncu pahalı ekipmana önce harcarsa sınırı kapatamaz.
 - **Kurulum:** görev hedefleri, makara etiketleri (x/y), risk katmanı, makara notu ve taktik notu gizli; "Stratejini sen kur."
-- **Hırsızlar:** çitte kamera görmeyen bölüm varsa hırsız ve hayvanlar yalnızca o boşluğa yakın noktadan doğar (`spawnBias`), kapsanan çit 60 kat pahalı (`pathfinding`). Çiti 1,6 sn'de keser, içeride 1,6× hızla en yakın makaraya koşar (`pickTarget`). Çit %100 kapsamdaysa çite yaklaşırken görülür.
-- **Otomatik AİM:** karar kartı yok. Kameraya giren olayı AİM 0,65 sn içinde kendisi sınıflandırır (`fairStore.autoAim`): hırsız → siren/uzaktan uyarı + devriye + jandarma, hayvan → sesli uyarı, personel → doğrulama. Elle karakter işaretleme kapalı, taktik çubuğu yok. Savunma başladıktan sonra kamera eklenemez (acil yerleştirme hakkı 0, mağaza gizli).
+- **Hırsızlar:** çitte kamera görmeyen bölüm varsa hırsız ve hayvanlar yalnızca o boşluğa yakın noktadan doğar (`spawnBias`), kapsanan çit 60 kat pahalı (`pathfinding`). Çiti 2,6 sn'de keser, içeride 1,6× hızla hedef makaraya koşar (`expoEntry`). Çit %100 kapsamdaysa çite yaklaşırken görülür.
+- **Otomatik AİM:** karar kartı yok. Kameraya giren olayı AİM 0,4 sn içinde kendisi sınıflandırır (`fairStore.autoAim`): hırsız → hedefli uyarı (geri kaçar, `aimRepel`) + devriye + jandarma, hayvan → sesli uyarı, personel → doğrulama. Elle karakter işaretleme kapalı, taktik çubuğu yok. Savunma başladıktan sonra kamera eklenemez (acil yerleştirme hakkı 0, mağaza gizli).
 - **Çalınma uyarısı:** hırsız fark edilmeden makara alırsa ekranın ortasında "BAKIR KABLO ÇALINDI! Makaraları koruyan bir kamera olmadığı için hırsız fark edilmeden kabloları aldı." uyarısı, 3,4 sn ağır çekim ve kamera o noktaya kayar (`engine.theftLog`).
 - **Puan:** çit kapsaması ×5 (en çok 500) + korunan makara ×150 + AİM'in durdurduğu hırsız ×120 − fark edilmeden giren hırsız ×100. %100 sınırda "Sınır bekçisi" rozeti. Sonuç özetinde "Sınır kapsaman %X — N boşluktan M hırsız girdi, K makara çalındı"; puan kartında "Çit kapsaması". Desecure demosu fuar modunda çit hattını %100 kapatan kurulumla oynar.
 
 ### Fuar modu: akıllı hırsız ve kamera sabotajı
 
-- Her çit kamerasının hemen dış tarafı (1,4 m) "sabotaj noktası"dır (`coverage.sabotageSpot`). Bu noktayı başka hiçbir kamera görmüyorsa kamera **savunmasız** sayılır (`unwatchedFenceCams`, `engine.vulnerable`). Bullet kamera çit boyunca baktığı için kendi dibini göremez; onu komşu kamera izlemelidir.
+- Bir çit kamerasının direğini başka hiçbir kamera görmüyorsa ve konisi komşu koniyle çit üstünde kesişmiyorsa kamera **savunmasız** sayılır (`camWatched` / `fenceConnected`, `unwatchedFenceCams`, `engine.vulnerable`). Hırsız kameranın hemen dış tarafında (`coverage.sabotageSpot`) çömelip sabote eder. Bullet kamera çit boyunca baktığı için kendi direğini göremez; onu komşu kamera izlemelidir.
 - Çitte boşluk yokken savunmasız kamera varsa hırsız **Sabotajcı hırsız** olarak doğar (`spawnSaboteur`): kameraya en yakın noktadan kör noktaya yaklaşır, 2,6 sn çömelip kamerayı devre dışı bırakır (`engine.sabotage`, `DeviceRuntime.sabotaged`), çit kapsaması yeniden hesaplanır ve açılan boşluktan en yakın makaraya koşar. Sonraki hırsızlar da bu boşluğu kullanır.
 - Sabotajcı yaklaşırken bir kameraya görünürse AİM müdahale eder ve sabotajcı planından vazgeçip kaçar.
 - Sabotaj anında turuncu uyarı: "KAMERA SABOTE EDİLDİ! BLT-02 kamerasını başka bir kamera görmüyordu. Hırsız kör noktadan yaklaşıp kamerayı devre dışı bıraktı." (ağır çekim + kamera odaklanır). Kameranın konisi kırmızıya döner.
@@ -185,6 +185,24 @@ Desecure demosunun üst çubuğunda (ses düğmesinin yanında) **Ana sayfa** bu
 
 - Hırsız geldiği yoldan kaçar (her modda): doğduğu nokta (`originX/Z`) ve çitten ilk girdiği hücre (`entryCell`) kaydedilir. Makarayı alınca (ya da siren/devriye ile kaçarken) önce kendi kestiği deliğe, oradan geldiği noktaya yürür; kendi deliğinden çıkarken çiti yeniden kesmez (`startEscape`, `ThreatAI` "ownHole").
 - "Gerçek sahada AİM bunu durdurur / 7/24 tutar" türü cümleler kaldırıldı (kamyonet uyarısı, görev özeti, pes / tesis boşaldı notları, demo sonu, meydan okuma sonu, fuar sınır özeti).
+
+### Fuar modu: tempo ve sınır algılama düzeltmesi
+
+- **Bekleme yok:** ilk hırsız savunma başlar başlamaz (~2 sn) doğar, ~3–5 sn içinde çite varır; sonrakiler düzenli aralıkla gelir (`generateSchedule`, fuar dalı). Hırsız sayısı fuar modunda Kolay 20 · Normal 24 · Zor 32 (`EXPO_THIEVES`, `fairStore.ts`; Normal'de ~3 sn'de bir hırsız) + alarm fırtınasında 2 hırsız. Aynı anda sahada en fazla 4–6 hırsız, 2–3 jandarma aracı olur. Sahadan ayrılan / gözaltına alınan şüphelinin olayı kendiliğinden kapanır, harita işaretleri birikmez. Hedef makaraya maliyet alanı önbelleğe alınır ve hırsızın yolu doğrudan bu alandan çıkarılır (`pathFromField`); doğum başına ~1–3 ms. Görev seçimindeki özet de bu sayıyı ve "Süresiz kurulum"u gösterir.
+- **Dört yandan gelirler:** hırsızlar karıştırılmış bir sırayla K/D/G/B yönlerinden sırayla doğar (`sideOrder`); hedef makara o yöne yakın olanlardan seçilir. Çitte boşluk varsa boşluğun yönü ve komşu yönler kullanılır (uzak yönden dolaşma yok). HES'te kuzey (baraj) yoktur, üç yön.
+- **Akıllı yaklaşma, dolaşma yok:** hırsız önce hedef makarayı seçer (kamerasız olan önce), sonra hedefe en ucuz yoldan (çit boşluğu / kör nokta) ulaşabileceği doğum noktasından gelir (`expoEntry`, `pathfinding.costField`). Eskiden kapsanan sınırda çit dışında 30–50 sn dolaşıyordu.
+- **Kapsanan çitten giriş yok:** kapsama ölçütü artık hırsızın çiti çömelerek kestiği nokta (çit hücresi + dış kenarı, diz hizası; `FENCE_CUT_H`, `fenceCutPoint`). Kredi planı (`expoPerimeterPlan`) aynı ölçütle hesaplanır. Çit kesme 2,6 sn (`EXPO_CUT`), AİM görüntü analizi algılamayı 3 kat hızlandırır, AİM 0,4 sn içinde müdahale eder ve kamerada görülen hırsızı hedefli uyarıyla geri kaçırır (`aimRepel`). Eskiden uyarı %33 ihtimalle işe yaramıyor, hırsız kameraya rağmen giriyordu.
+- **Sürpriz olay yok:** fuar modunda toz fırtınası ve elektrik kesintisi kapalı (kapsamayı rastgele bozup "kameraya rağmen giriş" yaratıyordu).
+- **İlk hırsız sabotajcı olmaz:** ziyaretçi önce AİM'in sınırda nasıl durdurduğunu görür; kameralar birbirini görmüyorsa 2. hırsızdan itibaren sabotaj gelir.
+- Test (her harita, Kolay/Normal/Zor, açık/sis, gündüz/gece, 8 tohum): tam ve karşılıklı görüşlü kurulumda içeri giren hırsız 0; yalnızca çiti kapsayan kurulumda sabotaj sonrası, boşluklu kurulumda boşluktan giriş sürüyor. İlk temas ortalama 3–6 sn.
+
+### Fuar modu: sabotaj ölçütü (gevşek)
+
+- Bir çit kamerası **izleniyor** sayılır: (a) direği başka bir kameranın konisinin içindeyse (`camWatched`) **veya** (b) konisi çit üstünde komşu bir kameranın konisiyle kesişiyorsa, yani aradaki çit kesintisiz kapsanıyorsa (`fenceConnected`: çit halkasında kameradan iki yöne yürünür, kapsanmayan hücreye rastlamadan başka bir kameraya ulaşılırsa izleniyor) — `unwatchedFenceCams`, `coverage.ts`.
+- Yani ekranda koniler çit üstünde birbirine değiyorsa sabotaj olmaz. Sabotaj yalnızca kamera hem menzil dışında hem de konisi komşusuna ulaşmıyorsa mümkündür; bu durumda genelde çitte gerçek bir boşluk vardır ve hırsız sabotaj yerine boşluktan girer. Pratikte sabotaj çok nadir görülür.
+- Eski ölçütler: önce kameranın 1,4 m dışındaki sabotaj noktası (kayalar / çalılar / eğim gizleyince yanlış sabotaj), sonra yalnızca direk-konide (27 m aralıklı köşe + kapı kameralarında koniler ortada kesişse de direkler 19 m menzil dışında kalıyor, sabotaj oluyordu).
+- Sabotaja açık kamera listesi savunma başında bir kez çıkarılır; kredi planındaki karşılıklı görüş adımı (`expoPerimeterPlan`) aynı ölçütü kullanır — çit %100 kapsanınca ek kamera gerekmez, kredi = kapsama maliyeti ×1,2 + iç alan payı (örn. GES Normal gündüz 6.200).
+- Test: köşe + kenarlara 8–22 m arayla çift bullet (6 saha) ve tam kapsama planları: sabotaj 0; boşluklu kurulumda boşluktan giriş sürüyor.
 
 ### Fuar şifresi (GitHub'a uygun)
 
