@@ -256,6 +256,15 @@ Desecure demosunun üst çubuğunda (ses düğmesinin yanında) **Ana sayfa** bu
 
 - Çitte boşluk olsa da hırsızlar K/D/G/B sırasıyla kendi yönlerinden gelir; boşluk başka yöndeyse çit boyunca dışarıdan dolanıp boşluğa gider (eski "boşluğun yönünden gel" istisnası kaldırıldı). Tüm bölüm ve zorluklarda test: tam kapsama ve boşluklu kurulumda dağılım dengeli (örn. GES Normal boşluklu D8/K5/G7/B6).
 
+### v80: tek noktaya yığılma yok
+
+- Kapsanan çit hücresinin geçiş maliyeti 14×60'tan 14×3'e indirildi (`EXPO_COVERED_MULT`, `pathfinding.ts`). Boşluk ~30 m'den yakınsa hırsız oradan girer; uzaktaysa kendi yönündeki çiti keser (kamera görüyorsa AİM yakalar). Böylece boşluklu kurulumda bile giriş denemeleri çitin 6–15 ayrı noktasına dağılır; boşluktan fark edilmeden giriş sürer. Tüm bölüm/zorluklarda test edildi.
+
+### v81: AİM paneli sağ altta
+
+- Desecure AİM animasyon paneli (`ui/aim.css`) sağ alt köşeye alındı (`bottom: 16px`, 360 px; kısa ekranlarda 320 px). Ortadaki "AİM: HIRSIZ TESPİT EDİLDİ" geri bildirimi ve uyarıları örtmüyor; 1280×800, 1366×768, 1920×1080'de çakışma yok. Kısa ekran medya sorgusundaki `top: 84px` kalıntısı paneli uzatıyordu, kaldırıldı.
+- Tam tur testi: 6 bölüm × Kolay-gündüz, Normal-gece, Zor-gündüz — JS hatası 0, tam kapsamda giriş 0, dört yön dengeli.
+
 ### Fuar şifresi (GitHub'a uygun)
 
 Şifre kaynakta ve yayın dosyasında açık yazılmaz; yalnızca özeti tutulur (`EXPO_PASSWORD_HASH`, `checkExpoPassword`, `src/game/config/expo.ts`). Büyük/küçük harf fark etmez. Şifreyi değiştirmek için oyunu açıp tarayıcı konsolunda `__expoHash('yeni-sifre')` çalıştırın, çıkan değeri `EXPO_PASSWORD_HASH`'e, yeni uzunluğu `EXPO_PASSWORD_LEN`'e yazıp yeniden derleyin. Not: bu bir gizleme; kodu inceleyen kararlı biri yine de deneme yoluyla bulabilir, fuar modu için yeterlidir.
