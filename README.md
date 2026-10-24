@@ -204,6 +204,58 @@ Desecure demosunun üst çubuğunda (ses düğmesinin yanında) **Ana sayfa** bu
 - Sabotaja açık kamera listesi savunma başında bir kez çıkarılır; kredi planındaki karşılıklı görüş adımı (`expoPerimeterPlan`) aynı ölçütü kullanır — çit %100 kapsanınca ek kamera gerekmez, kredi = kapsama maliyeti ×1,2 + iç alan payı (örn. GES Normal gündüz 6.200).
 - Test: köşe + kenarlara 8–22 m arayla çift bullet (6 saha) ve tam kapsama planları: sabotaj 0; boşluklu kurulumda boşluktan giriş sürüyor.
 
+### v70: dört yandan giriş, HES notu, demo kamerası, sürüm etiketi
+
+- **Kapı artık çit kadar zor:** fuar modunda kapalı kapının geçiş maliyeti çitle eşitlendi (`pathfinding.cellCost`, nav 3). Eskiden kapalı kapı (8) kapsanan çitten (14) ucuz olduğu için bütün hırsızlar ana kapıya yığılıyor, tek kamera her işi yapıyordu.
+- **Hedef çeşitliliği:** hırsız hedefini yönüne yakın makaralar arasından seçer; kamerasız makara 3 kat çekici ama tek hedef değil. Doğum noktası en ucuza 25 m paylı 8 adaydan rastgele (`expoEntry`). Normal GES'te 26 hırsız çitin 12 ayrı 8 m'lik bölümünden yaklaştı (HES'te 3 cepheden 9 bölüm).
+- **HES:** görev kartı notu (v71'de tekneyle giriş geldi; bkz. aşağısı).
+- **Desecure demosu:** kamera artık her yakalamada olay yerine yaklaşmıyor; saha uzaktan izlenir (`DemoHUD`'daki focusOn efekti kaldırıldı).
+- **Sürüm etiketi:** giriş ekranının sol altında `SÜRÜM v70 · 23.10.2026` (`src/version.ts` → `APP_VERSION`, `.cr-ver`). Her yayında burayı bir artır.
+
+### v71: HES'te tekneyle gelen hırsızlar
+
+- **Kuzey çiti (v71'de etekte, v72'de tepede):** HES'in kuzey çit hattı artık suda değil (v71: eğik yüzün dibinde z = −18,5; v72: tepede z = −27,5; `MapData.fenceNorthZ`, `grid.fenceNorth`). Doğu/batı çitleri bu hatta bağlanır; cebri boruların geçtiği yerde çit yok (borular engel). Bu hatta bullet/çift bullet kamera konur, kapsama ve kredi planı onu da sayar (`fenceRing`, `expoPerimeterPlan`).
+- **Tekne rotası:** rezervuarda 10 doğum noktası (`SpawnPoint.boat`, kuzey yönü). Hırsız kayıkla kıyıya gelir (3,2 m/s), baraj tepesine çıkar (13 m), eğik yüzden etekteki çite iner, çiti keser; kara yolu karaya çıkınca hesaplanır (`MapData.boat`, `engine.boatWps`, `boatLanded`, `NPC.wp` düz çizgi ara noktaları — nav yok sayılır, `NPC.yOff` zemin üstü yükseklik). Kayık + kürek modeli `SimLayer.tsx`.
+- **Kaçış:** su/baraj üstündeyken fark edilirse tekneyle geri döner; içeride fark edilirse baraj eteğine yürür, tepeden tekneye biner (`wpAfter`). Jandarma su/baraj üstündeki şüpheliye gönderilmez; tekneyle kaçırılan makara `lootLost`'a yazılır.
+- Hayvanlar tekne noktalarını kullanmaz. Diğer haritalarda değişiklik yok (`fenceNorthZ` yok → −L).
+- Test: tam kapsama planında 8/8 tekne hırsızı etekteki çitte fark edilip tekneyle kaçtı; kuzey hattı kamerasızken 7/8 içeri girdi. HES'te dört yön: D/K/G/B dağılımı dengeli.
+
+### v72: barajın tepesinde çit, HES kredisi, kapsama kenar payı, tam tur testi
+
+- **Kuzey çiti baraj tepesinde:** HES'in kuzey çit hattı barajın tepe yolunun rezervuar kenarında (z = −27,5); doğu/batı çitleri yamaçtan tırmanıp bu hatta bağlanır — baraj çitle çevrilidir. Baraj gövdesi içinde zemin tepe yoluna çıkarılır (`HES.crestH`, `heightAt`), gövde görüş engeli yalnızca korkuluk (1 m); böylece tepedeki kameralar 17 m'den rezervuarı ve sahayı görür. Tekneyle gelen hırsız kıyıya çıkar, **tepedeki çiti keser**, eğik yüzden sahaya iner (`Waypoint.tag`, çit hücresine varınca `cutting`). Kaçışta suda ise doğrudan geri, tepedeyse çit → kıyı → su.
+- **HES kredisi +%15** (`expoBudget`, `mapMult`): örn. Normal gündüz 8.900, Zor gece 16.000.
+- **Kapsama kenar payı:** çit hücresi kameranın koni kenarına 8° yakınsa "kapsanıyor" sayılmaz (`FENCE_FOV_MARGIN`; plan ve oyun aynı ölçüt). Gece köşelerde koni kenarındaki hücreden fark edilmeden giriş oluyordu; artık plan o köşeye kamera ekler.
+- **Tam tur testi (gerçek derleme, Playwright):** 6 bölüm × Normal-gündüz ve Zor-gece; kurulum → savunma → sonuç ekranı; JS hatası 0; tam kapsamda içeri giren 0; hırsızlar dört yönden dengeli (HES'te tekne dâhil, örn. G8/B8/D7/tekne7). Başsız test (`hl.ts`): 6 bölüm × Kolay/Normal/Zor × açık/sis × gündüz/gece — fark edilmeden giriş 0, yaklaşma 9–19 ayrı 8 m'lik çit bölümünden.
+
+### v73: baraj çiti görünür
+
+- Baraj tepesindeki çit hattı tepenin **saha tarafındaki kenarına** alındı (z = −24,5): rezervuar kenarındaki çit, açık renkli betonun üstünde ve korkuluğun arkasında görünmüyordu. Tekne rotası: kıyı → tepe (kuzey kenar) → çit (güney kenar, kesilir) → etek.
+- Baraj tepesi çiti **koyu renkli** ve direkleri 2 m'de bir (`MapObjects.Fence`: HES kuzey kenarı ayrı geometri, `darkPostMat`); baraj modelinde saha tarafındaki korkuluk kaldırıldı (çit onun yerinde).
+- Doğu/batı çitleri yamaçtan tırmanıp bu hatta bağlanır; baraj tepesi + iki yamaç çitle çevrilidir.
+
+### v74: baraj çiti gerçekten görünür
+
+- v73'te çit vardı ama tepedeki kalın bordo şerit (0,5 m) ve yol kalınlığı çitin alt yarısını örtüyordu; uzaktan görünmüyordu. Tepe zemini yol seviyesine (`HES.crestH` 13,3) çıkarıldı, bordo şerit inceltildi (0,2 m). Koyu çit ve direkler artık yolun önünde net.
+
+### v75: tesis ve baraj birlikte çit içinde
+
+- HES'in kuzey çiti barajın tepesinde **rezervuar kenarında** (z = −27,5): çit tesisi ve barajın tamamını çevreler. Doğu/batı çitleri yamaçtan bu hatta bağlanır. Baraj modelindeki korkuluklar kaldırıldı (çit onların yerinde), koyu çit ve sık direkler yolun arkasında, suya karşı net görünür.
+- Tekne rotası: kıyı → çit (kesilir) → tepe → eğik yüzden etek. Kaçış: tepedeyse çit → kıyı → su; suda ise doğrudan geri.
+
+### v76: baraj dört taraftan çit içinde
+
+- Barajın arkasında 5 m'lik **kuru kıyı şeridi** açıldı (`HES.shoreGap`; su artık z < −33'te başlar, `HydroWater` buna göre). Kuzey çiti bu şeridin ortasında (z = −31,5): çit, tesisi ve barajı dört taraftan çevreler, baraj ile çit arasında yürünebilir kuru alan vardır (kullanıcının krokisi). Doğu/batı çitleri barajın iki ucundan dolanıp bu hatta bağlanır.
+- Tekne rotası: su → kıyı şeridi → çit (kesilir) → barajın arkasından tepeye tırmanış → eğik yüzden etek. Kaçış tersi.
+- Kredi: çit uzadığı için HES kredisi arttı (Normal gündüz açık 10.300 civarı).
+
+### v77
+
+- HES kıyı çitindeki boşluk (eski cebri boru geçidi, yalnızca görselde kalmıştı) kapatıldı; çit kesintisiz.
+
+### v78: her durumda dört yandan
+
+- Çitte boşluk olsa da hırsızlar K/D/G/B sırasıyla kendi yönlerinden gelir; boşluk başka yöndeyse çit boyunca dışarıdan dolanıp boşluğa gider (eski "boşluğun yönünden gel" istisnası kaldırıldı). Tüm bölüm ve zorluklarda test: tam kapsama ve boşluklu kurulumda dağılım dengeli (örn. GES Normal boşluklu D8/K5/G7/B6).
+
 ### Fuar şifresi (GitHub'a uygun)
 
 Şifre kaynakta ve yayın dosyasında açık yazılmaz; yalnızca özeti tutulur (`EXPO_PASSWORD_HASH`, `checkExpoPassword`, `src/game/config/expo.ts`). Büyük/küçük harf fark etmez. Şifreyi değiştirmek için oyunu açıp tarayıcı konsolunda `__expoHash('yeni-sifre')` çalıştırın, çıkan değeri `EXPO_PASSWORD_HASH`'e, yeni uzunluğu `EXPO_PASSWORD_LEN`'e yazıp yeniden derleyin. Not: bu bir gizleme; kodu inceleyen kararlı biri yine de deneme yoluyla bulabilir, fuar modu için yeterlidir.
