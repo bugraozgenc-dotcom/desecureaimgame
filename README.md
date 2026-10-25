@@ -270,6 +270,18 @@ Desecure demosunun üst çubuğunda (ses düğmesinin yanında) **Ana sayfa** bu
 - Kullanıcı grafik modunu kendisi seçer: **Otomatik** (kare hızı düşerse kalite kendiliğinden azalır), **Yüksek**, **Düşük** (çözünürlük 1×, gölge 1024, ayrıntı katmanı yok). Seçim cihazda saklanır (`desecure-gfx`, `scene/gfx.ts`).
 - Düğme: giriş ekranı üst çubuğunda ses düğmesinin yanında, oyun içi üst çubukta (tıkla → sırayla değişir) ve duraklatma menüsünde üç seçenekli kutu (`ui/GfxToggle.tsx`, `GfxPicker`).
 
+### v83: e-posta ile gönderme kaldırıldı
+
+- Sonuç ekranındaki "PAYLAŞ · Puan kartını e-postana gönder" düğmesi ve e-posta penceresi kaldırıldı; puan kartı yalnızca PNG olarak indirilir. Stant paneli (Ctrl+Shift+E) ve `mailer.ts` kuyruğu kodda duruyor ama yeni talep üretilmez.
+
+### v84: telsiz kutusu kaldırıldı
+
+- Giriş ekranındaki "FUAR · EIF / STANT KONSOLU" (normal modda "TELSİZ · JANDARMA") kutusu kaldırıldı.
+
+### v3.6: yeni sürüm numarası
+
+- Sürüm numarası v3.6'dan yeniden başlar (sol altta yalnızca "v3.6" görünür, "SÜRÜM" başlığı yok). Bundan sonra her yayında 0.1 artar: `src/version.ts` → `APP_VERSION`.
+
 ### Fuar şifresi (GitHub'a uygun)
 
 Şifre kaynakta ve yayın dosyasında açık yazılmaz; yalnızca özeti tutulur (`EXPO_PASSWORD_HASH`, `checkExpoPassword`, `src/game/config/expo.ts`). Büyük/küçük harf fark etmez. Şifreyi değiştirmek için oyunu açıp tarayıcı konsolunda `__expoHash('yeni-sifre')` çalıştırın, çıkan değeri `EXPO_PASSWORD_HASH`'e, yeni uzunluğu `EXPO_PASSWORD_LEN`'e yazıp yeniden derleyin. Not: bu bir gizleme; kodu inceleyen kararlı biri yine de deneme yoluyla bulabilir, fuar modu için yeterlidir.
