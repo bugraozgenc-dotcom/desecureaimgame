@@ -265,6 +265,11 @@ Desecure demosunun üst çubuğunda (ses düğmesinin yanında) **Ana sayfa** bu
 - Desecure AİM animasyon paneli (`ui/aim.css`) sağ alt köşeye alındı (`bottom: 16px`, 360 px; kısa ekranlarda 320 px). Ortadaki "AİM: HIRSIZ TESPİT EDİLDİ" geri bildirimi ve uyarıları örtmüyor; 1280×800, 1366×768, 1920×1080'de çakışma yok. Kısa ekran medya sorgusundaki `top: 84px` kalıntısı paneli uzatıyordu, kaldırıldı.
 - Tam tur testi: 6 bölüm × Kolay-gündüz, Normal-gece, Zor-gündüz — JS hatası 0, tam kapsamda giriş 0, dört yön dengeli.
 
+### v82: grafik kalitesi seçimi
+
+- Kullanıcı grafik modunu kendisi seçer: **Otomatik** (kare hızı düşerse kalite kendiliğinden azalır), **Yüksek**, **Düşük** (çözünürlük 1×, gölge 1024, ayrıntı katmanı yok). Seçim cihazda saklanır (`desecure-gfx`, `scene/gfx.ts`).
+- Düğme: giriş ekranı üst çubuğunda ses düğmesinin yanında, oyun içi üst çubukta (tıkla → sırayla değişir) ve duraklatma menüsünde üç seçenekli kutu (`ui/GfxToggle.tsx`, `GfxPicker`).
+
 ### Fuar şifresi (GitHub'a uygun)
 
 Şifre kaynakta ve yayın dosyasında açık yazılmaz; yalnızca özeti tutulur (`EXPO_PASSWORD_HASH`, `checkExpoPassword`, `src/game/config/expo.ts`). Büyük/küçük harf fark etmez. Şifreyi değiştirmek için oyunu açıp tarayıcı konsolunda `__expoHash('yeni-sifre')` çalıştırın, çıkan değeri `EXPO_PASSWORD_HASH`'e, yeni uzunluğu `EXPO_PASSWORD_LEN`'e yazıp yeniden derleyin. Not: bu bir gizleme; kodu inceleyen kararlı biri yine de deneme yoluyla bulabilir, fuar modu için yeterlidir.
